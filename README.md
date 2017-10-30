@@ -2,9 +2,7 @@
 
 > Computer science is no more about computers than astronomy is about telescopes. -- Edsger Dijkstra
 
-[![license][license-image]][license-url]
-[license-image]:https://img.shields.io/github/license/JCMais/node-libcurl.svg?style=flat-square
-[license-url]:https://raw.githubusercontent.com/JCMais/node-libcurl/develop/LICENSE-MIT
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
 
 ## Description
 A basic mPower, mFi Switch and mFi In-Wall Outlet HTTP API wrapper utilizing [CURL](https://github.com/JCMais/node-libcurl) and using ES-6 promises. Works on Linux, macOS and Windows.
