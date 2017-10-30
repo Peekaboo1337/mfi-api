@@ -1,13 +1,18 @@
 {
   "name": "mfi-api",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A basic mPower, mFi Switch and mFi In-Wall Outlet HTTP API wrapper utilizing CURL and using ES-6 promises. Works on Linux, macOS and Windows.",
   "main": "./src/index.js",
   "scripts": {
     "start": "node ./src/index.js",
     "test": "node ./test/index.js"
   },
-  "keywords": ["mFi", "mPower", "mFi Switch", "ubiquiti"],
+  "keywords": [
+    "mFi",
+    "mPower",
+    "mFi Switch",
+    "ubiquiti"
+  ],
   "author": "Erek Röös",
   "license": "MIT",
   "dependencies": {
