@@ -28,24 +28,6 @@
     "url": "https://github.com/Peekaboo1337/mfi-api/issues"
   },
   "devDependencies": {
-    "xo": "^0.18.2"
-  },
-  "xo": {
-    "esnext": true,
-    "space": true,
-    "semicolon": false,
-    "ignores": [
-      "test/*"
-    ],
-    "rules": {
-      "comma-dangle": [
-        "error",
-        "always-multiline"
-      ],
-      "object-curly-spacing": [
-        "error",
-        "always"
-      ]
-    }
+    "eslint": "^4.12.0"
   }
 }
