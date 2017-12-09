@@ -28,7 +28,7 @@
     "url": "https://github.com/Peekaboo1337/mfi-api/issues"
   },
   "devDependencies": {
-    "eslint": "^4.12.0",
-    "ms": "^2.0.0"
+    "ms": "^2.0.0",
+    "standard": "^10.0.3"
   }
 }

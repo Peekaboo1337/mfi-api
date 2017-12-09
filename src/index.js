@@ -27,9 +27,9 @@ const connect = (conn, ip, user, pw) => {
         'aes192-ctr',
         'aes256-ctr',
         'aes128-gcm@openssh.com',
-        'aes256-gcm@openssh.com',
-      ],
-    },
+        'aes256-gcm@openssh.com'
+      ]
+    }
   })
 }
 
@@ -54,7 +54,7 @@ const mfiLogin = (username, password, ip) => {
 
     conn.on('error', err => {
       debug(err)
-      return reject()
+      return reject(err)
     })
 
     connect(conn, ip, username, password)
@@ -75,8 +75,7 @@ const setSensor = (sensorId, output, ip) => {
       }
 
       stream.on('close', (code, signal) => {
-        if (code !== 0)
-          return reject()
+        if (code !== 0) return reject(err)
 
         return resolve()
       })
@@ -100,5 +99,5 @@ module.exports = {
   mfiLogin,
   mfiLogout,
   setSensor,
-  getSensor,
+  getSensor
 }
