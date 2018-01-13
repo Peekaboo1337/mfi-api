@@ -33,31 +33,51 @@ const connect = (conn, ip, user, pw) => {
   })
 }
 
+const connectionFactory = (errHandler, readyHandler, closeHandler) => {
+  const conn = new Client()
+
+  conn.on('error', err => {
+    debug('Connection creation error - ' + err)
+    errHandler(err)
+  })
+
+  conn.on('ready', () => {
+    readyHandler(conn)
+  })
+
+  conn.on('close', hadError => {
+    closeHandler(hadError)
+  })
+
+  return conn
+}
+
 const mfiLogin = (username, password, ip) => {
   return new Promise((resolve, reject) => {
-    const conn = new Client()
-    conn.on('ready', () => {
-      debug('Connected to socket')
+    const errHandler = err => {
+      throw new Error(err)
+    }
 
-      conn.on('close', hadError => {
-        if (hadError) { // Restart connection if lost due to an error
-          delete connections[ip]
-          connect(conn, ip, username, password)
-          connections[ip] = conn
-        }
-      })
-
+    const readyHandler = conn => {
+      // Connection established. Notify caller that everything was fine
       connections[ip] = conn
-
       return resolve()
-    })
+    }
 
-    conn.on('error', err => {
-      debug(err)
-      return reject(err)
-    })
+    const closeHandler = hadError => {
+      if (hadError) { // Restart connection if lost due to an error
+        debug('Had Error: ' + hadError)
+        delete connections[ip]
 
-    connect(conn, ip, username, password)
+        const conn = connectionFactory(errHandler, readyHandler, closeHandler)
+
+        connect(conn, ip, username, password)
+        connections[ip] = conn
+      }
+    }
+
+    const conn = connectionFactory(errHandler, readyHandler, closeHandler)
+    connect(conn, ip, username, password) // connect via ssh
   })
 }
 
@@ -68,8 +88,10 @@ const mfiLogout = ip => {
 
 const setSensor = (sensorId, output, ip) => {
   return new Promise((resolve, reject) => {
+    debug(`Setting sensor ${sensorId}, ${output}, ${ip}`)
     connections[ip].exec(`/usr/bin/echo ${output} > /proc/power/output${sensorId}`, (err, stream) => {
       if (err) {
+        debug('Critical err - ')
         debug(err)
         return reject(err)
       }
@@ -77,6 +99,7 @@ const setSensor = (sensorId, output, ip) => {
       stream.on('close', (code, signal) => {
         if (code !== 0) return reject(err)
 
+        debug('Set sensor successfully')
         return resolve()
       })
 
