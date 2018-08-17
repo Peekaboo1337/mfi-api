@@ -2,125 +2,121 @@
 const debug = require('debug')('mfi-lib')
 const { Client } = require('ssh2')
 
-// SSH client connections map
-const connections = {}
+module.exports = class MfiSocketConnector {
+  /**
+   * Creating a new connection to a mFi socket
+   *
+   * @param {string} ip The host to connect to
+   * @param {string} user The user to login
+   * @param {string} password The password of the user
+   */
+  constructor (ip, user, password) {
+    // Private members
+    this._connection = new Client()
+    this._connectionIsReady = false
+    this._ip = ip
+    this._user = user
+    this._password = password
 
-const connect = (conn, ip, user, pw) => {
-  conn.connect({
-    host: ip,
-    port: 22,
-    username: user,
-    password: pw,
-    algorithms: {
-      kex: ['diffie-hellman-group1-sha1'],
-      cipher: [
-        '3des-cbc',
-        'blowfish-cbc',
-        'cast128-cbc',
-        'arcfour',
-        'arcfour128',
-        'arcfour256',
-        'aes128-cbc',
-        'aes192-cbc',
-        'aes256-cbc',
-        'aes128-ctr',
-        'aes192-ctr',
-        'aes256-ctr',
-        'aes128-gcm@openssh.com',
-        'aes256-gcm@openssh.com'
-      ]
-    }
-  })
-}
+    // Attaching to events
+    this._connection.on('error', this._handleError.bind(this))
+    this._connection.on('ready', this._handleReady.bind(this))
+    this._connection.on('close', this._handleClose.bind(this))
+  }
 
-const connectionFactory = (errHandler, readyHandler, closeHandler) => {
-  const conn = new Client()
+  /**
+   * Setting the the sensor found under the given id
+   * to the provided value.
+   *
+   * @param {number} sensorId The sensor to manipulate
+   * @param {number} value The value to set
+   * @returns {Promise<void>} A resolvable promise with no value
+   */
+  setSensor (sensorId, value) {
+    return new Promise(async (resolve, reject) => {
+      if (!this._connectionIsReady) await this._reconnect()
 
-  conn.on('error', err => {
-    debug('Connection creation error - ' + err)
-    errHandler(err)
-  })
+      this._connection.exec(`/usr/bin/echo ${value} > /proc/power/output${sensorId}`, (err, stream) => {
+        if (err) return reject(err)
 
-  conn.on('ready', () => {
-    readyHandler(conn)
-  })
-
-  conn.on('close', hadError => {
-    closeHandler(hadError)
-  })
-
-  return conn
-}
-
-const mfiLogin = (username, password, ip) => {
-  return new Promise((resolve, reject) => {
-    const errHandler = err => {
-      throw new Error(err)
-    }
-
-    const readyHandler = conn => {
-      // Connection established. Notify caller that everything was fine
-      connections[ip] = conn
-      return resolve()
-    }
-
-    const closeHandler = hadError => {
-      if (hadError) { // Restart connection if lost due to an error
-        debug('Had Error: ' + hadError)
-        delete connections[ip]
-
-        const conn = connectionFactory(errHandler, readyHandler, closeHandler)
-
-        connect(conn, ip, username, password)
-        connections[ip] = conn
-      }
-    }
-
-    const conn = connectionFactory(errHandler, readyHandler, closeHandler)
-    connect(conn, ip, username, password) // connect via ssh
-  })
-}
-
-const mfiLogout = ip => {
-  connections[ip].end()
-  delete connections[ip]
-}
-
-const setSensor = (sensorId, output, ip) => {
-  return new Promise((resolve, reject) => {
-    debug(`Setting sensor ${sensorId}, ${output}, ${ip}`)
-    connections[ip].exec(`/usr/bin/echo ${output} > /proc/power/output${sensorId}`, (err, stream) => {
-      if (err) {
-        debug('Critical err - ')
-        debug(err)
-        return reject(err)
-      }
-
-      stream.on('close', (code, signal) => {
-        if (code !== 0) return reject(err)
-
-        debug('Set sensor successfully')
-        return resolve()
-      })
-
-      stream.on('data', data => {
-        debug('STDOUT: ' + data)
-      })
-
-      stream.stderr.on('data', data => {
-        debug('STDERR: ' + data)
+        stream.on('close', (code, signal) => code === 0 ? resolve() : reject(new Error('Stream error')))
+        stream.on('data', (data) => debug(data))
+        stream.stderr.on('data', (data) => debug(data))
       })
     })
-  })
-}
+  }
 
-const getSensor = (sensorId, ip) => {
-  return {}
-}
+  /**
+   * Handles thrown errors by the ssh2 package
+   *
+   * @param {Error} err Error thrown by ssh2 package
+   */
+  _handleError (err) {
+    this._connectionIsReady = false
+    throw err
+  }
 
-module.exports = {
-  mfiLogin,
-  mfiLogout,
-  setSensor,
-  getSensor
+  /**
+   * Kicks in when the connection is ready to be used
+   */
+  _handleReady () {
+    this._connectionIsReady = true
+  }
+
+  /**
+   * Handles the ssh close event
+   *
+   * @param {boolean} hadError Indicates if connection was closed due to an error
+   */
+  _handleClose (hadError) {
+    this._connectionIsReady = false
+  }
+
+  async _reconnect () {
+    return new Promise((resolve, reject) => {
+      this._connect(this._ip, this._user, this._password)
+
+      const interval = setInterval(() => { // Polling if connection is ready
+        if (!this._connectionIsReady) return
+
+        clearInterval(interval) // Avoid memory leak
+        return resolve()
+      }, 50)
+    })
+  }
+
+  /**
+   * Creating a new connection to a mFi socket
+   *
+   * @param {string} ip The host to connect to
+   * @param {string} user The user to login
+   * @param {string} password The password of the user
+   */
+  _connect (ip, user, password) {
+    this._connection.connect({
+      host: ip,
+      port: 22,
+      username: user,
+      password,
+      algorithms: {
+        kex: ['diffie-hellman-group1-sha1'],
+        cipher: [
+          '3des-cbc',
+          'blowfish-cbc',
+          'cast128-cbc',
+          'arcfour',
+          'arcfour128',
+          'arcfour256',
+          'aes128-cbc',
+          'aes192-cbc',
+          'aes256-cbc',
+          'aes128-ctr',
+          'aes192-ctr',
+          'aes256-ctr',
+          'aes128-gcm@openssh.com',
+          'aes256-gcm@openssh.com'
+        ]
+      }
+    })
+  }
 }
