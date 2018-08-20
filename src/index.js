@@ -22,6 +22,8 @@ module.exports = class MfiSocketConnector {
     this._connection.on('error', this._handleError.bind(this))
     this._connection.on('ready', this._handleReady.bind(this))
     this._connection.on('close', this._handleClose.bind(this))
+
+    debug('Init')
   }
 
   /**
@@ -32,18 +34,25 @@ module.exports = class MfiSocketConnector {
    * @param {number} value The value to set
    * @returns {Promise<void>} A resolvable promise with no value
    */
-  setSensor (sensorId, value) {
+  async setSensor (sensorId, value) {
     return new Promise(async (resolve, reject) => {
+      debug('Setting sensor')
       if (!this._connectionIsReady) await this._reconnect()
 
       this._connection.exec(`/usr/bin/echo ${value} > /proc/power/output${sensorId}`, (err, stream) => {
         if (err) return reject(err)
 
-        stream.on('close', (code, signal) => code === 0 ? resolve() : reject(new Error('Stream error')))
+        debug('Executing and reading stream')
+
+        stream.on('close', (code, signal) => code === 0 ? resolve({ code }) : reject(new Error('Stream error')))
         stream.on('data', (data) => debug(data))
         stream.stderr.on('data', (data) => debug(data))
       })
     })
+  }
+
+  disconnect () {
+    this._connection.destroy()
   }
 
   /**
@@ -52,6 +61,7 @@ module.exports = class MfiSocketConnector {
    * @param {Error} err Error thrown by ssh2 package
    */
   _handleError (err) {
+    debug(err)
     this._connectionIsReady = false
     throw err
   }
@@ -69,15 +79,19 @@ module.exports = class MfiSocketConnector {
    * @param {boolean} hadError Indicates if connection was closed due to an error
    */
   _handleClose (hadError) {
+    debug('Connection closed: ' + hadError)
     this._connectionIsReady = false
   }
 
   async _reconnect () {
     return new Promise((resolve, reject) => {
+      debug('Reconnecting')
       this._connect(this._ip, this._user, this._password)
 
       const interval = setInterval(() => { // Polling if connection is ready
         if (!this._connectionIsReady) return
+
+        debug('Reconnecting')
 
         clearInterval(interval) // Avoid memory leak
         return resolve()
