@@ -9,8 +9,15 @@ A basic mPower, mFi Switch and mFi In-Wall Outlet wrapper utilizing [SSH](https:
 Tested on Linux only.
 
 ## Install
+Old version
+
 ```bash
-$ npm install --save mfi-api
+$ npm install --save mfi-api@0.1.1
+```
+
+New version (Breaking changes!!!)
+```bash
+$ npm install --save mfi-api@latest
 ```
 
 ## Usage
