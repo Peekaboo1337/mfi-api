@@ -1,6 +1,6 @@
 {
   "name": "mfi-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A basic mPower, mFi Switch and mFi In-Wall Outlet HTTP API wrapper utilizing CURL and using ES-6 promises. Works on Linux, macOS and Windows.",
   "main": "./src/index.js",
   "scripts": {
