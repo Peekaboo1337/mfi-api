@@ -24,24 +24,18 @@ $ npm install --save mfi-api@latest
 ```js
 
 const ms = require('ms')
-const { mfiLogin, setSensor, mfiLogout } = require('../src')
+const SocketConnector = require('../src/index')
 
-const main = async () => {
-  try {
-    await mfiLogin('ubnt', 'ubnt', '192.168.178.32')
-    await setSensor(1, 1, '192.168.178.32')
-    setTimeout(async () => await setSensor(1, 0, '192.168.178.32'), ms('10s'))
-    setTimeout(async () => await setSensor(1, 1, '192.168.178.32'), ms('20s'))
-    setTimeout(async () => await setSensor(1, 0, '192.168.178.32'), ms('30s'))
-    setTimeout(async () => await setSensor(1, 1, '192.168.178.32'), ms('40s'))
-    setTimeout(async () => await setSensor(1, 0, '192.168.178.32'), ms('50s'))
-    setTimeout(async () => await mfiLogout('192.168.178.32'), ms('1m'))
-  } catch (err) {
-    console.log(err)
-  }
+const __main__ = async () => {
+  const connector = new SocketConnector('192.168.2.3', 'ubnt', 'ubnt')
+  setTimeout(async () => connector.setSensor(1, 1), ms('5s'))
+  setTimeout(async () => connector.setSensor(1, 0), ms('10s'))
+  setTimeout(async () => connector.setSensor(1, 1), ms('15s'))
+  setTimeout(async () => connector.setSensor(1, 0), ms('20s'))
+  setTimeout(async () => connector.disconnect(), ms('25s'))
 }
 
-main()
+__main__()
 
 ```
 
