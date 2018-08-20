@@ -1,20 +1,14 @@
 
 const ms = require('ms')
-const { mfiLogin, setSensor, mfiLogout } = require('../src')
+const SocketConnector = require('../src/index')
 
 const __main__ = async () => {
-  try {
-    await mfiLogin('ubnt', 'ubnt', '192.168.2.106')
-    await setSensor(1, 1, '192.168.2.106')
-    setTimeout(async () => setSensor(1, 0, '192.168.2.106'), ms('10s'))
-    setTimeout(async () => setSensor(1, 1, '192.168.2.106'), ms('20s'))
-    setTimeout(async () => setSensor(1, 0, '192.168.2.106'), ms('30s'))
-    setTimeout(async () => setSensor(1, 1, '192.168.2.106'), ms('40s'))
-    setTimeout(async () => setSensor(1, 0, '192.168.2.106'), ms('50s'))
-    setTimeout(async () => mfiLogout('192.168.2.106'), ms('1m'))
-  } catch (err) {
-    console.log(err)
-  }
+  const connector = new SocketConnector('192.168.2.3', 'ubnt', 'ubnt')
+  setTimeout(async () => connector.setSensor(1, 1), ms('5s'))
+  setTimeout(async () => connector.setSensor(1, 0), ms('10s'))
+  setTimeout(async () => connector.setSensor(1, 1), ms('15s'))
+  setTimeout(async () => connector.setSensor(1, 0), ms('20s'))
+  setTimeout(async () => connector.disconnect(), ms('25s'))
 }
 
 __main__()
